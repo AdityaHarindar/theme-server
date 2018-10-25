@@ -10,7 +10,13 @@ import (
 	"github.com/gorilla/mux"
 )
 
-const resources = "./resources"
+const resources = "./resources/"
+
+var domains []string
+
+func init() {
+	domains = getAllDomainResourceNames()
+}
 
 func getAllDomainResourceNames() []string {
 
@@ -39,9 +45,11 @@ func main() {
 		Handler:      r,
 	}
 
-	// Register routes
-	r.HandleFunc("/theme", ThemeHandler).Methods("GET").Headers("domain")
-	r.HandleFunc("/health", Health).Methods("GET")
+	// Register routes for all domains in resources
+	r.HandleFunc("/health", Health)
+	for _, d := range domains {
+		r.PathPrefix("/").Handler(http.FileServer(http.Dir(resources + d)))
+	}
 
 	http.Handle("/", r)
 
@@ -55,16 +63,4 @@ func main() {
 
 func Health(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Alive"))
-}
-
-func ThemeHandler(w http.ResponseWriter, r *http.Request) {
-
-	domain := r.Header.Get("Domain")
-
-	for _, d := range getAllDomainResourceNames() {
-		if strings.Compare(d, domain) == 0 {
-			http.FileServer(http.Dir(resources + domain)) //wtf is this doing here
-		}
-	}
-
 }
