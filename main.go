@@ -1,35 +1,23 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
-	"os/exec"
-	"strings"
+	"os"
 	"time"
 
 	"github.com/gorilla/mux"
 )
 
-const resources = "./resources/"
+const themeResources = "./resources/themes/"
 
-var domains []string
+type domain string
+type theme string
 
-func init() {
-	domains = getAllDomainResourceNames()
-}
-
-func getAllDomainResourceNames() []string {
-
-	//Get all file names as string array
-	out, err := exec.Command("ls", resources).Output()
-	if err != nil {
-		panic("excuse me, what?")
-	}
-
-	//File names returned by 'ls' are \n separated
-	fNames := strings.Split(string(out), "\n")
-
-	return fNames
+// Mapping
+var M = map[domain]theme{
+	"localhost": "1",
 }
 
 func main() {
@@ -45,10 +33,13 @@ func main() {
 		Handler:      r,
 	}
 
-	// Register routes for all domains in resources
+	// Register routes for all domains based on domain -> theme mapping
 	r.HandleFunc("/health", Health)
-	for _, d := range domains {
-		r.PathPrefix("/").Handler(http.FileServer(http.Dir(resources + d)))
+	for d, t := range M {
+		r.PathPrefix("/").
+			Handler(http.FileServer(http.Dir(themeResources + t))).
+			Host(string(d)).
+			Methods("GET")
 	}
 
 	http.Handle("/", r)
@@ -62,5 +53,14 @@ func main() {
 }
 
 func Health(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Alive"))
+
+	h, _ := os.Hostname()
+	resp := struct {
+		Status   string `json:"status"`
+		Hostname string `json:"hostname"`
+	}{"Alive", h}
+
+	resBody, _ := json.Marshal(resp)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(resBody)
 }
