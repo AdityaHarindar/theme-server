@@ -42,6 +42,11 @@ func main() {
 			Methods("GET")
 	}
 
+	// Register a default route that returns the default theme
+	r.PathPrefix("/").
+		Handler(http.FileServer(http.Dir(themeResources + "default"))).
+		Methods("GET")
+
 	http.Handle("/", r)
 
 	func() {
