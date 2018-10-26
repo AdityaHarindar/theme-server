@@ -10,12 +10,13 @@ import (
 	"github.com/gorilla/mux"
 )
 
-const themeResources = "./resources/themes/"
+const themeResourcesPath = "./resources/themes/"
 
 type domain string
 type theme string
 
 // Mapping
+// All themes in the mapping must be present as a directory in the themeResourcesPath
 var M = map[domain]theme{
 	"localhost": "1",
 }
@@ -37,14 +38,14 @@ func main() {
 	r.HandleFunc("/health", Health)
 	for d, t := range M {
 		r.PathPrefix("/").
-			Handler(http.FileServer(http.Dir(themeResources + t))).
+			Handler(http.FileServer(http.Dir(themeResourcesPath + t))).
 			Host(string(d)).
 			Methods("GET")
 	}
 
 	// Register a default route that returns the default theme
 	r.PathPrefix("/").
-		Handler(http.FileServer(http.Dir(themeResources + "default"))).
+		Handler(http.FileServer(http.Dir(themeResourcesPath + "default"))).
 		Methods("GET")
 
 	http.Handle("/", r)
